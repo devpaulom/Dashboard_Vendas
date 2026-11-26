@@ -51,6 +51,17 @@ th:first-child,td:first-child{text-align:left}
 .msg>i.ok{color:var(--good)}.msg>i.warn{color:var(--warn)}.msg>i.err{color:var(--bad)}
 .er rect.box{fill:var(--card);stroke:var(--line)}.er text{font-size:11px}.er .t{fill:var(--fg);font-weight:600;font-size:13px}.er .tag{fill:var(--accent);font-weight:600;font-size:10px}.er .f{fill:var(--fg)}
 
+.btn.sm{padding:5px 9px;font-size:12px}.btn.del{color:var(--bad)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 12px}
+.fgrid label,.ed label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:5px;min-width:0}
+.fgrid input,.ed input{font:inherit;font-size:13px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
+.fgrid select{width:100%}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:start;margin-bottom:6px}
+.ed .col{display:grid;grid-template-columns:1fr 104px auto;gap:6px;margin-bottom:6px;align-items:center}
+.ed select,table select{font:inherit;font-size:12px;padding:5px 6px;max-width:100%}
+.relt td{white-space:normal}.relt td:first-child{text-align:left}
+
 [hidden]{display:none!important}
 .login{min-height:80vh;display:flex;align-items:center;justify-content:center}
 .lcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:14px}
@@ -105,16 +116,16 @@ function hbar(items,{fmt=brl0,color=()=> 'var(--s1)',w=520,lw=120,rh=26}={}){
  return `<svg viewBox="0 0 ${w} ${H}" role="img">`+items.map((it,i)=>{const y=i*rh+2,l=Math.max(2,it.v/max*bw);
  return `<g ${tip(it.tip||it.label+': '+fmt(it.v))}><rect x="0" y="${y}" width="${w}" height="${rh}" fill="transparent"/><text x="0" y="${y+rh/2+4}">${it.label}</text><path d="M${lw} ${y+4}h${l-4}a4 4 0 0 1 4 4v${rh-16}a4 4 0 0 1 -4 4h-${l-4}z" fill="${color(it,i)}"/><text x="${lw+l+6}" y="${y+rh/2+4}" style="fill:var(--fg)">${fmt(it.v)}</text></g>`}).join('')+'</svg>';
 }
-function columns({series,labels,line,w=720,h=260,stack=true,colors}){ // series: [{name,vals}]
+function columns({series,labels,line,w=720,h=260,stack=true,colors,fmt=brl0,axf=short}){ // series: [{name,vals}]
  const pl=44,pb=22,pt=10,pr=8,iw=w-pl-pr,ih=h-pb-pt,n=labels.length;
  const tot=labels.map((_,i)=>stack?sum(series,s=>s.vals[i]):Math.max(...series.map(s=>s.vals[i])));
  let max=Math.max(...tot,...(line?line.vals:[0]))*1.08||1;
  const nice=(()=>{const p=Math.pow(10,Math.floor(Math.log10(max)));return Math.ceil(max/p*2)/2*p})();max=nice;
  const y=v=>pt+ih-v/max*ih,bw=iw/n*0.62,x=i=>pl+iw/n*(i+0.5);
  let o=`<svg viewBox="0 0 ${w} ${h}" role="img">`;
- for(let t=0;t<=4;t++){const v=max/4*t;o+=`<line x1="${pl}" x2="${w-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${short(v)}</text>`}
+ for(let t=0;t<=4;t++){const v=max/4*t;o+=`<line x1="${pl}" x2="${w-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${axf(v)}</text>`}
  labels.forEach((lb,i)=>{
-  let acc=0;const tt=lb+'\n'+series.map(s=>s.name+': '+brl0(s.vals[i])).join('\n')+(line?'\n'+line.name+': '+brl0(line.vals[i]):'');
+  let acc=0;const tt=lb+'\n'+series.map(s=>s.name+': '+fmt(s.vals[i])).join('\n')+(line?'\n'+line.name+': '+fmt(line.vals[i]):'');
   o+=`<g ${tip(tt)}><rect x="${x(i)-iw/n/2}" y="${pt}" width="${iw/n}" height="${ih}" fill="transparent"/>`;
   series.forEach((s,k)=>{const v=s.vals[i],base=stack?acc:0,top=base+v,sw=stack?bw:bw/series.length,sx=stack?x(i)-bw/2:x(i)-bw/2+k*sw;
    if(v>0)o+=`<rect x="${sx}" y="${y(top)+(stack&&k>0?1:0)}" width="${sw-(stack?0:2)}" height="${Math.max(0,y(base)-y(top)-(stack&&k>0?2:0))}" rx="2" fill="${colors[k]}"/>`;acc+=v});
@@ -209,32 +220,164 @@ function goal(ls){const mx=Math.max(...ls.map(l=>Math.max(l.f,l.mt)))||1,w=460,l
  return `<g ${tip(l.nome+'\nFaturado: '+brl0(l.f)+'\nMeta: '+brl0(l.mt)+'\nAtingimento: '+pct(l.ati))}><rect x="0" y="${y}" width="${w}" height="${rh-4}" fill="transparent"/><text x="0" y="${y+16}">${l.nome}</text><rect x="${lw}" y="${y+4}" width="${l.mt/mx*bw}" height="14" rx="3" fill="var(--neutral)"/><rect x="${lw}" y="${y+4}" width="${Math.max(2,l.f/mx*bw)}" height="14" rx="3" fill="${cv(l.id-1)}"/><line x1="${lw+l.mt/mx*bw}" x2="${lw+l.mt/mx*bw}" y1="${y}" y2="${y+22}" stroke="var(--fg)" stroke-width="2"/></g>`}).join('')+'</svg>'}
 
 
-/* ---------- fontes e relacionamentos ---------- */
-const SCHEMA={Vendas:{role:'Tabela fato',cols:[['ID_Venda','PK'],['Data',''],['ID_Produto','FK'],['ID_Loja','FK'],['Quantidade',''],['Preco_Unitario',''],['Desconto','']],desc:'Uma linha por venda'},
- Produtos:{role:'Dimensão',cols:[['ID_Produto','PK'],['Produto',''],['Categoria',''],['Preco_Referencia','']],desc:'Catálogo e categorias'},
- Lojas:{role:'Dimensão',cols:[['ID_Loja','PK'],['Loja',''],['Cidade','']],desc:'Lojas e cidades'},
- Metas:{role:'Tabela de metas',cols:[['Mes',''],['ID_Loja','FK'],['Meta_Faturamento','']],desc:'Meta mensal por loja'}};
-function box(x,y,w,n){const s=SCHEMA[n],h=44+s.cols.length*18+8;
- return `<g><rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/><text class="t" x="${x+12}" y="${y+20}">${n}</text><text x="${x+w-12}" y="${y+20}" text-anchor="end">${s.role}</text><line x1="${x}" x2="${x+w}" y1="${y+30}" y2="${y+30}" stroke="var(--line)"/>`+
- s.cols.map((c,i)=>`<text class="f" x="${x+12}" y="${y+48+i*18}">${c[0]}</text><text class="tag" x="${x+w-12}" y="${y+48+i*18}" text-anchor="end">${c[1]}</text>`).join('')+`</g>`}
-function link(x1,y1,x2,y2,l1,l2,lab,lx,ly){return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="var(--accent)" stroke-width="2" fill="none"/><text x="${x1+(x1<x2?6:-6)}" y="${y1-6}" text-anchor="${x1<x2?'start':'end'}" style="fill:var(--fg);font-weight:600">${l1}</text><text x="${x2+(x1<x2?-6:6)}" y="${y2-6}" text-anchor="${x1<x2?'end':'start'}" style="fill:var(--fg);font-weight:600">${l2}</text><text x="${lx}" y="${ly}" text-anchor="middle">${lab}</text>`}
-function dash4(){
- const o=D.orf||{prod:0,loja:0,metaLoja:0,dup:0},cn=D.cnt;
- const er=`<svg class="er" viewBox="0 0 810 330" role="img" style="min-width:640px">${box(10,30,190,'Produtos')}${box(300,10,200,'Vendas')}${box(610,30,190,'Lojas')}${box(610,200,190,'Metas')}
- ${link(200,100,300,100,'1','N','ID_Produto',250,92)}${link(610,100,500,100,'1','N','ID_Loja',555,92)}${link(705,140,705,200,'1','N','',0,0)}<text x="715" y="174" style="fill:var(--mut)">ID_Loja</text></svg>`;
- const st=n=>n===0?['ok','Íntegro']:['warn',n+' sem correspondência'];
- const rel=[['Produtos → Vendas','ID_Produto','Um para muitos',o.prod],['Lojas → Vendas','ID_Loja','Um para muitos',o.loja],['Lojas → Metas','ID_Loja','Um para muitos',o.metaLoja]];
- return `<div class="kpis">${Object.keys(SCHEMA).map(n=>kpi(n,num(cn[n])+' linhas',SCHEMA[n].role+' · '+SCHEMA[n].cols.length+' colunas')).join('')}</div>
- <div class="grid" style="margin-top:14px">
- <div class="card c12"><h2>Modelo de dados</h2><div class="n">PK = chave primária, FK = chave estrangeira. Metas se liga às vendas pela loja e pelo mês.</div><div class="tw">${er}</div></div>
- <div class="card c7"><h2>Relacionamentos</h2><div class="n">Verificação de integridade na última carga</div><div class="tw"><table><thead><tr><th>Relação</th><th>Chave</th><th>Cardinalidade</th><th>Integridade</th></tr></thead><tbody>
- ${rel.map(r=>{const s=st(r[3]);return `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="color:var(--${s[0]==='ok'?'good':'warn'})">${s[1]}</td></tr>`}).join('')}
- <tr><td>Vendas</td><td>ID_Venda</td><td>Chave única</td><td style="color:var(--${o.dup?'warn':'good'})">${o.dup?o.dup+' duplicadas':'Sem duplicidade'}</td></tr></tbody></table></div></div>
- <div class="card c5"><h2>Medidas calculadas</h2><div class="n">Como os números dos dashboards são obtidos</div>
-  <table><tbody><tr><td>Faturamento bruto</td><td>Qtd × Preço unitário</td></tr><tr><td>Desconto</td><td>Bruto × Desconto</td></tr><tr><td>Faturamento líquido</td><td>Bruto − Desconto</td></tr><tr><td>Ticket médio</td><td>Líquido ÷ nº de vendas</td></tr><tr><td>Atingimento</td><td>Líquido ÷ Meta</td></tr></tbody></table></div>
- <div class="card c12"><h2>Colunas por fonte</h2><div class="n">Origem: ${D.upd}</div><div class="tw"><table><thead><tr><th>Fonte</th><th>Descrição</th><th>Colunas</th></tr></thead><tbody>
- ${Object.keys(SCHEMA).map(n=>`<tr><td>${n}</td><td>${SCHEMA[n].desc}</td><td style="white-space:normal">${SCHEMA[n].cols.map(c=>c[0]).join(', ')}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+/* ---------- gráficos próprios (aba Meu painel) ---------- */
+const MET={fat:{n:'Faturamento líquido',f:'brl'},bruto:{n:'Faturamento bruto',f:'brl'},q:{n:'Quantidade vendida',f:'num'},n:{n:'Nº de vendas',f:'num'},tk:{n:'Ticket médio',f:'brl2'},d:{n:'Desconto concedido (R$)',f:'brl'},dp:{n:'Desconto médio (%)',f:'pct'},meta:{n:'Meta',f:'brl',meta:1},ati:{n:'Atingimento da meta (%)',f:'pct',meta:1}};
+const DIM={m:'Mês',l:'Loja',c:'Cidade',p:'Produto',k:'Categoria'};
+const FMT={brl:brl0,brl2:brl,num:num,pct:v=>pct(v,1)},AX={brl:short,brl2:v=>'R$ '+Math.round(v),num:short,pct:v=>pct(v,1)};
+const lsGet=(k,d)=>{try{const s=localStorage.getItem(k);if(s)return JSON.parse(s)}catch(_){}return d},lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
+const CH0=()=>[{id:1,t:'',m:'fat',d:'m',ty:'line',o:'nat',top:0,w:'f'},{id:2,t:'',m:'tk',d:'l',ty:'bar',o:'desc',top:0,w:'h'},{id:3,t:'',m:'dp',d:'k',ty:'col',o:'desc',top:0,w:'h'}];
+const B0=()=>({id:null,t:'',m:'fat',d:'m',ty:'col',o:'nat',top:0,w:'h'});
+let CH=lsGet('dash_custom_v1',null)||CH0(),B=B0(),CONF=null;
+const saveCh=()=>lsSet('dash_custom_v1',CH);
+function series(c){
+ const R=rows(),Mt=metas();
+ const key={m:x=>x.m,l:x=>lojas[x.l].nome,c:x=>lojas[x.l].cidade,p:x=>prod[x.p].nome,k:x=>prod[x.p].cat}[c.d];
+ const mk={m:x=>x[0],l:x=>lojas[x[1]].nome,c:x=>lojas[x[1]].cidade}[c.d];
+ const g=new Map(),get=k=>g.get(k)||g.set(k,{f:0,b:0,d:0,q:0,n:0,meta:0}).get(k);
+ if(c.d==='m')for(let i=1;i<=12;i++)get(i);
+ R.forEach(x=>{const a=get(key(x));a.f+=x.f;a.b+=x.b;a.d+=x.d;a.q+=x.q;a.n+=x.n});
+ if(mk)Mt.forEach(x=>{get(mk(x)).meta+=x[2]});
+ const val=a=>({fat:a.f,bruto:a.b,q:a.q,n:a.n,tk:a.n?a.f/a.n:0,d:a.d,dp:a.b?a.d/a.b:0,meta:a.meta,ati:a.meta?a.f/a.meta:0})[c.m];
+ let it=[...g.entries()].map(([k,a])=>({k,label:c.d==='m'?MES[k-1]:k,v:val(a)}));
+ if(c.o==='desc')it.sort((a,b)=>b.v-a.v);else if(c.o==='asc')it.sort((a,b)=>a.v-b.v);else it.sort((a,b)=>c.d==='m'?a.k-b.k:String(a.k).localeCompare(String(b.k),'pt'));
+ return c.top>0?it.slice(0,c.top):it;
 }
+function linechart({labels,vals,fmt,axf,w=560,h=260}){
+ const pl=56,pr=14,pt=12,pb=24,iw=w-pl-pr,ih=h-pt-pb,n=labels.length;
+ let max=Math.max(...vals)*1.08||1;const p=Math.pow(10,Math.floor(Math.log10(max)));max=Math.ceil(max/p*2)/2*p;
+ const x=i=>pl+(n===1?iw/2:iw*i/(n-1)),y=v=>pt+ih-v/max*ih,st=Math.ceil(n/12);
+ let o=`<svg viewBox="0 0 ${w} ${h}" role="img">`;
+ for(let t=0;t<=4;t++){const v=max/4*t;o+=`<line x1="${pl}" x2="${w-pr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${axf(v)}</text>`}
+ const pts=vals.map((v,i)=>x(i)+','+y(v)).join(' ');
+ o+=`<polygon points="${x(0)},${y(0)} ${pts} ${x(n-1)},${y(0)}" fill="var(--s1)" opacity=".12"/><polyline fill="none" stroke="var(--s1)" stroke-width="2" points="${pts}"/>`;
+ labels.forEach((l,i)=>{o+=`<g ${tip(l+': '+fmt(vals[i]))}><rect x="${x(i)-iw/n/2}" y="${pt}" width="${iw/n}" height="${ih}" fill="transparent"/><circle cx="${x(i)}" cy="${y(vals[i])}" r="4" fill="var(--s1)" stroke="var(--card)" stroke-width="2"/>${i%st===0?`<text x="${x(i)}" y="${h-6}" text-anchor="middle">${l}</text>`:''}</g>`});
+ return o+'</svg>';
+}
+function chartSVG(c){
+ const s=series(c);if(!s.length)return '<div class="n">Sem dados para este gráfico.</div>';
+ const M=MET[c.m],fmt=FMT[M.f],axf=AX[M.f],labels=s.map(x=>x.label),vals=s.map(x=>x.v),wide=c.w==='f';
+ if(c.ty==='bar')return hbar(s.map(x=>({label:x.label,v:x.v})),{fmt,lw:130,w:wide?900:520,color:()=>'var(--s1)'});
+ if(c.ty==='line')return linechart({labels,vals,fmt,axf,w:wide?900:560});
+ return columns({series:[{name:M.n,vals}],labels,colors:['var(--s1)'],fmt,axf,w:wide?900:560,h:260});
+}
+const autoT=c=>MET[c.m].n+' por '+DIM[c.d].toLowerCase();
+const sel=(k,opts,v)=>`<select data-b="${k}" id="b_${k}">${opts.map(([o,l,dis])=>`<option value="${o}" ${String(o)===String(v)?'selected':''} ${dis?'disabled':''}>${l}</option>`).join('')}</select>`;
+function dashC(){
+ const mOK=['m','l','c'].includes(B.d);
+ const form=`<div class="fgrid">
+  <label>Título (opcional)<input data-b="t" id="b_t" value="${esc(B.t)}" placeholder="${esc(autoT(B))}"></label>
+  <label>Métrica ${sel('m',Object.entries(MET).map(([k,v])=>[k,v.n,v.meta&&!mOK]),B.m)}</label>
+  <label>Agrupar por ${sel('d',Object.entries(DIM),B.d)}</label>
+  <label>Tipo ${sel('ty',[['col','Colunas'],['bar','Barras'],['line','Linha']],B.ty)}</label>
+  <label>Ordem ${sel('o',[['nat','Natural'],['desc','Maior para menor'],['asc','Menor para maior']],B.o)}</label>
+  <label>Mostrar ${sel('top',[[0,'Todos'],[3,'Top 3'],[5,'Top 5'],[8,'Top 8']],B.top)}</label>
+  <label>Largura ${sel('w',[['h','Metade'],['f','Inteira']],B.w)}</label></div>
+  ${mOK?'':'<div class="n" style="margin-bottom:8px">Meta e atingimento só existem por mês, loja ou cidade.</div>'}
+  <div class="acts"><button class="btn" data-c="${B.id?'save':'add'}">${B.id?'Salvar alterações':'Adicionar ao painel'}</button>${B.id?'<button class="btn sec" data-c="cancel">Cancelar edição</button>':''}</div>`;
+ const cards=CH.map((c,i)=>`<div class="card ${c.w==='f'?'c12':'c6'}"><div class="head"><div><h2>${esc(c.t||autoT(c))}</h2><div class="n">${MET[c.m].n} por ${DIM[c.d].toLowerCase()}</div></div>
+  <div class="acts"><button class="btn sm sec" data-c="up" data-i="${i}" ${i?'':'disabled'} aria-label="Mover para cima">Subir</button><button class="btn sm sec" data-c="down" data-i="${i}" ${i<CH.length-1?'':'disabled'} aria-label="Mover para baixo">Descer</button><button class="btn sm sec" data-c="edit" data-i="${i}">Editar</button><button class="btn sm sec" data-c="wd" data-i="${i}">${c.w==='f'?'Reduzir':'Ampliar'}</button>${CONF===i?`<button class="btn sm del" data-c="rm" data-i="${i}">Confirmar</button>`:`<button class="btn sm sec del" data-c="conf" data-i="${i}">Remover</button>`}</div></div>${chartSVG(c)}</div>`).join('');
+ return `<div class="grid"><div class="card c6" id="builder"><h2>${B.id?'Editar gráfico':'Novo gráfico'}</h2><div class="n">Escolha o que medir e como agrupar. Os gráficos ficam salvos neste navegador e respeitam o filtro de loja.</div>${form}</div>
+  <div class="card c6"><h2>Pré-visualização</h2><div class="n">${esc(B.t||autoT(B))}</div>${chartSVG(B)}</div>
+  <div class="c12" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h2>Meus gráficos (${CH.length})</h2><button class="btn sm sec" data-c="reset">Restaurar gráficos padrão</button></div>
+  ${cards||'<div class="card c12 n">Nenhum gráfico ainda. Monte o primeiro acima.</div>'}</div>`;
+}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset&&t.dataset.b==='t'){B.t=t.value}});
+document.addEventListener('change',e=>{const t=e.target,k=t.dataset&&t.dataset.b;if(!k||k==='t')return;
+ B[k]=['top'].includes(k)?+t.value:t.value;
+ if(k==='d'){B.o=B.d==='m'?'nat':'desc';if(MET[B.m].meta&&!['m','l','c'].includes(B.d))B.m='fat'}
+ render()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;const a=b.dataset.c,i=+b.dataset.i;
+ if(a==='add'){CH.push({...B,id:Date.now()});B=B0()}
+ else if(a==='save'){const j=CH.findIndex(x=>x.id===B.id);if(j>=0)CH[j]={...B};B=B0()}
+ else if(a==='cancel'){B=B0()}
+ else if(a==='edit'){B={...CH[i]};CONF=null;saveCh();render();const el=document.getElementById('builder');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return}
+ else if(a==='up'||a==='down'){const j=a==='up'?i-1:i+1;[CH[i],CH[j]]=[CH[j],CH[i]]}
+ else if(a==='wd'){CH[i].w=CH[i].w==='f'?'h':'f'}
+ else if(a==='conf'){CONF=i;render();return}
+ else if(a==='rm'){CH.splice(i,1);CONF=null}
+ else if(a==='reset'){CH=CH0();B=B0();CONF=null}
+ saveCh();render()});
+
+/* ---------- modelo de dados editável (aba Fontes) ---------- */
+const MODEL0=()=>({tables:{
+ Produtos:{role:'Dimensão',desc:'Catálogo e categorias',cols:[['ID_Produto','PK'],['Produto',''],['Categoria',''],['Preco_Referencia','']]},
+ Vendas:{role:'Tabela fato',desc:'Uma linha por venda',cols:[['ID_Venda','PK'],['Data',''],['ID_Produto','FK'],['ID_Loja','FK'],['Quantidade',''],['Preco_Unitario',''],['Desconto','']]},
+ Lojas:{role:'Dimensão',desc:'Lojas e cidades',cols:[['ID_Loja','PK'],['Loja',''],['Cidade','']]},
+ Metas:{role:'Tabela de metas',desc:'Meta mensal por loja',cols:[['Mes',''],['ID_Loja','FK'],['Meta_Faturamento','']]}},
+ rels:[{a:'Produtos',ac:'ID_Produto',b:'Vendas',bc:'ID_Produto',card:'1:N'},{a:'Lojas',ac:'ID_Loja',b:'Vendas',bc:'ID_Loja',card:'1:N'},{a:'Lojas',ac:'ID_Loja',b:'Metas',bc:'ID_Loja',card:'1:N'}]});
+let MODEL=lsGet('dash_model_v1',null)||MODEL0();
+const saveModel=()=>lsSet('dash_model_v1',MODEL);
+const TN=['Produtos','Vendas','Lojas','Metas'],ROLES=['Tabela fato','Dimensão','Tabela de metas','Outra'],CARDS=['1:N','N:1','1:1','N:N'];
+const mcols=t=>(MODEL.tables[t]?MODEL.tables[t].cols:[]).map(c=>c[0]);
+function keySet(t,c){const k=t+'.'+c;
+ if(k==='Vendas.ID_Produto')return new Set(D.rows.map(r=>r[2]));if(k==='Vendas.ID_Loja')return new Set(D.rows.map(r=>r[1]));
+ if(k==='Produtos.ID_Produto')return new Set(D.P.map(p=>p[0]));if(k==='Lojas.ID_Loja')return new Set(D.L.map(l=>l[0]));
+ if(k==='Metas.ID_Loja')return new Set(D.metas.map(m=>m[1]));return null}
+function relCheck(r){
+ const [p,c]=r.card==='N:1'?[[r.b,r.bc],[r.a,r.ac]]:[[r.a,r.ac],[r.b,r.bc]];
+ const ps=keySet(p[0],p[1]),cs=keySet(c[0],c[1]);if(!ps||!cs)return {k:'na',t:'Não verificável'};
+ const def=[['Produtos','ID_Produto','Vendas','ID_Produto','prod'],['Lojas','ID_Loja','Vendas','ID_Loja','loja'],['Lojas','ID_Loja','Metas','ID_Loja','metaLoja']].find(x=>x[0]===p[0]&&x[1]===p[1]&&x[2]===c[0]&&x[3]===c[1]);
+ let n=def&&D.orf?D.orf[def[4]]:0;for(const x of cs)if(!ps.has(x))n++;
+ return n?{k:'warn',t:n+' sem correspondência'}:{k:'ok',t:'Íntegro'}}
+function modelSVG(){
+ const hOf=n=>44+MODEL.tables[n].cols.length*18+8;
+ const P={Produtos:[10,30,190],Vendas:[300,10,200],Lojas:[610,30,190],Metas:[610,0,190]};P.Metas[1]=P.Lojas[1]+hOf('Lojas')+70;
+ const H=Math.max(...TN.map(n=>P[n][1]+hOf(n)))+16;
+ let o=`<svg class="er" viewBox="0 0 810 ${H}" role="img" style="min-width:640px">`;
+ TN.forEach(n=>{const [x,y,w]=P[n],T=MODEL.tables[n],h=hOf(n);
+  o+=`<g><rect class="box" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/><text class="t" x="${x+12}" y="${y+20}">${n}</text><text x="${x+w-12}" y="${y+20}" text-anchor="end">${esc(T.role)}</text><line x1="${x}" x2="${x+w}" y1="${y+30}" y2="${y+30}" stroke="var(--line)"/>`+
+  T.cols.map((c,i)=>`<text class="f" x="${x+12}" y="${y+48+i*18}">${esc(c[0])}</text><text class="tag" x="${x+w-12}" y="${y+48+i*18}" text-anchor="end">${c[1]}</text>`).join('')+'</g>'});
+ const cnt={};
+ MODEL.rels.forEach(r=>{if(!P[r.a]||!P[r.b]||r.a===r.b)return;
+  const key=[r.a,r.b].sort().join('|'),k=cnt[key]=(cnt[key]||0)+1,off=(k-1)*16,A={x:P[r.a][0],y:P[r.a][1],w:P[r.a][2],h:hOf(r.a)},Bx={x:P[r.b][0],y:P[r.b][1],w:P[r.b][2],h:hOf(r.b)};
+  const [c1,c2]=r.card.split(':'),key2=esc(r.ac===r.bc?r.ac:r.ac+' → '+r.bc);
+  if(A.x+A.w<=Bx.x||Bx.x+Bx.w<=A.x){const lf=A.x<Bx.x,x1=lf?A.x+A.w:A.x,x2=lf?Bx.x:Bx.x+Bx.w,y1=A.y+A.h/2+off,y2=Bx.y+Bx.h/2+off,xm=(x1+x2)/2;
+   o+=`<path d="M${x1} ${y1}H${xm}V${y2}H${x2}" stroke="var(--accent)" stroke-width="2" fill="none"/><text x="${x1+(lf?6:-6)}" y="${y1-6}" text-anchor="${lf?'start':'end'}" style="fill:var(--fg);font-weight:600">${c1}</text><text x="${x2+(lf?-6:6)}" y="${y2-6}" text-anchor="${lf?'end':'start'}" style="fill:var(--fg);font-weight:600">${c2}</text><text x="${xm}" y="${Math.min(y1,y2)-8}" text-anchor="middle">${key2}</text>`}
+  else{const up=A.y<Bx.y,y1=up?A.y+A.h:A.y,y2=up?Bx.y:Bx.y+Bx.h,x=Math.max(A.x,Bx.x)+Math.min(A.w,Bx.w)/2+off;
+   o+=`<path d="M${x} ${y1}V${y2}" stroke="var(--accent)" stroke-width="2" fill="none"/><text x="${x-6}" y="${y1+(up?14:-6)}" text-anchor="end" style="fill:var(--fg);font-weight:600">${c1}</text><text x="${x-6}" y="${y2+(up?-6:14)}" text-anchor="end" style="fill:var(--fg);font-weight:600">${c2}</text><text x="${x+8}" y="${(y1+y2)/2+4}">${key2}</text>`}});
+ return o+'</svg>';
+}
+const optT=(v)=>TN.map(n=>`<option ${n===v?'selected':''}>${n}</option>`).join('');
+const optC=(t,v)=>mcols(t).map(c=>`<option ${c===v?'selected':''}>${esc(c)}</option>`).join('');
+function dash4(){
+ const cn=D.cnt,o=D.orf||{dup:0};
+ const relRows=MODEL.rels.map((r,i)=>{const s=relCheck(r),col={ok:'good',warn:'warn',na:'mut'}[s.k];
+  return `<tr><td><select data-m="ra" data-i="${i}">${optT(r.a)}</select> <select data-m="rac" data-i="${i}">${optC(r.a,r.ac)}</select></td><td><select data-m="rcard" data-i="${i}">${CARDS.map(c=>`<option ${c===r.card?'selected':''}>${c}</option>`).join('')}</select></td><td><select data-m="rb" data-i="${i}">${optT(r.b)}</select> <select data-m="rbc" data-i="${i}">${optC(r.b,r.bc)}</select></td><td style="color:var(--${col})">${s.t}</td><td><button class="btn sm sec del" data-m="rrm" data-i="${i}">Remover</button></td></tr>`}).join('');
+ const tcards=TN.map(n=>{const T=MODEL.tables[n];
+  return `<div class="card c6 ed"><div class="head"><h2>${n}</h2><span class="n">${num(cn[n]||0)} linhas carregadas</span></div>
+   <label>Descrição<input data-m="desc" data-t="${n}" value="${esc(T.desc)}"></label>
+   <label>Tipo<select data-m="role" data-t="${n}">${ROLES.map(r=>`<option ${r===T.role?'selected':''}>${r}</option>`).join('')}</select></label>
+   <div class="n" style="margin-top:4px">Colunas</div>
+   ${T.cols.map((c,i)=>`<div class="col"><input data-m="cname" data-t="${n}" data-i="${i}" value="${esc(c[0])}" aria-label="Nome da coluna"><select data-m="tag" data-t="${n}" data-i="${i}" aria-label="Chave"><option value="" ${c[1]===''?'selected':''}>Sem chave</option><option ${c[1]==='PK'?'selected':''}>PK</option><option ${c[1]==='FK'?'selected':''}>FK</option></select><button class="btn sm sec del" data-m="rmcol" data-t="${n}" data-i="${i}" aria-label="Remover coluna">Remover</button></div>`).join('')}
+   <div><button class="btn sm sec" data-m="addcol" data-t="${n}">Adicionar coluna</button></div></div>`}).join('');
+ return `<div class="kpis">${TN.map(n=>kpi(n,num(cn[n]||0)+' linhas',MODEL.tables[n].role+' · '+MODEL.tables[n].cols.length+' colunas')).join('')}</div>
+ <div class="grid" style="margin-top:14px">
+ <div class="card c12"><h2>Modelo de dados</h2><div class="n">PK = chave primária, FK = chave estrangeira. O diagrama acompanha o que você edita abaixo.</div><div class="tw">${modelSVG()}</div></div>
+ <div class="card c12"><div class="head"><div><h2>Relacionamentos</h2><div class="n">Edite as chaves e a cardinalidade. A integridade é conferida com os dados carregados quando as colunas são chaves conhecidas.</div></div><div class="acts"><button class="btn sm" data-m="addrel">Adicionar relacionamento</button><button class="btn sm sec" data-m="reset">Restaurar modelo padrão</button></div></div>
+  <div class="tw"><table class="relt"><thead><tr><th>De</th><th>Cardinalidade</th><th>Para</th><th>Integridade</th><th></th></tr></thead><tbody>${relRows||'<tr><td colspan="5" class="n">Nenhum relacionamento.</td></tr>'}
+  <tr><td>Vendas · ID_Venda</td><td>Chave única</td><td></td><td style="color:var(--${o.dup?'warn':'good'})">${o.dup?o.dup+' duplicadas':'Sem duplicidade'}</td><td></td></tr></tbody></table></div></div>
+ ${tcards}
+ <div class="card c12"><h2>Medidas calculadas</h2><div class="n">Como os números dos dashboards são obtidos</div>
+  <table><tbody><tr><td>Faturamento bruto</td><td>Qtd × Preço unitário</td></tr><tr><td>Desconto</td><td>Bruto × Desconto</td></tr><tr><td>Faturamento líquido</td><td>Bruto − Desconto</td></tr><tr><td>Ticket médio</td><td>Líquido ÷ nº de vendas</td></tr><tr><td>Atingimento</td><td>Líquido ÷ Meta</td></tr></tbody></table>
+  <div class="n" style="margin-top:8px">As edições do modelo ficam salvas neste navegador e documentam as tabelas e as chaves. Os cálculos dos dashboards continuam usando as colunas originais da planilha. Origem dos dados: ${esc(D.upd)}.</div></div></div>`;
+}
+document.addEventListener('change',e=>{const t=e.target,m=t.dataset&&t.dataset.m;if(!m||t.tagName==='BUTTON')return;const i=+t.dataset.i,tb=t.dataset.t;
+ if(m==='role')MODEL.tables[tb].role=t.value;
+ else if(m==='desc')MODEL.tables[tb].desc=t.value;
+ else if(m==='tag')MODEL.tables[tb].cols[i][1]=t.value;
+ else if(m==='cname'){const old=MODEL.tables[tb].cols[i][0],nv=t.value.trim()||old;MODEL.tables[tb].cols[i][0]=nv;MODEL.rels.forEach(r=>{if(r.a===tb&&r.ac===old)r.ac=nv;if(r.b===tb&&r.bc===old)r.bc=nv})}
+ else if(['ra','rac','rb','rbc','rcard'].includes(m)){const r=MODEL.rels[i];r[{ra:'a',rac:'ac',rb:'b',rbc:'bc',rcard:'card'}[m]]=t.value;
+  if(m==='ra')r.ac=mcols(r.a)[0]||'';if(m==='rb')r.bc=mcols(r.b)[0]||''}
+ else return;
+ saveModel();render()});
+document.addEventListener('click',e=>{const b=e.target.closest('button[data-m]');if(!b)return;const m=b.dataset.m,i=+b.dataset.i,tb=b.dataset.t;
+ if(m==='addcol')MODEL.tables[tb].cols.push(['nova_coluna','']);
+ else if(m==='rmcol'){const c=MODEL.tables[tb].cols.splice(i,1)[0][0];MODEL.rels=MODEL.rels.filter(r=>!((r.a===tb&&r.ac===c)||(r.b===tb&&r.bc===c)))}
+ else if(m==='addrel')MODEL.rels.push({a:'Produtos',ac:mcols('Produtos')[0]||'',b:'Vendas',bc:mcols('Vendas')[0]||'',card:'1:N'});
+ else if(m==='rrm')MODEL.rels.splice(i,1);
+ else if(m==='reset')MODEL=MODEL0();
+ else return;
+ saveModel();render()});
 /* ---------- atualizar fontes ---------- */
 let pend=null,LOG=[{t:'Carga inicial (arquivo original)',ok:1}];
 const NEED={Vendas:['ID_Venda','Data','ID_Produto','ID_Loja','Quantidade','Preco_Unitario','Desconto'],Produtos:['ID_Produto','Produto','Categoria','Preco_Referencia'],Lojas:['ID_Loja','Loja','Cidade'],Metas:['Mes','ID_Loja','Meta_Faturamento']};
@@ -289,10 +432,10 @@ document.addEventListener('click',e=>{
  if(e.target.id==='reset'){setData(JSON.parse(JSON.stringify(ORIG)));LOG.unshift({t:'Dados originais restaurados'});pend=null;render()}});
 
 /* ---------- shell ---------- */
-const TABS=['Visão executiva','Produtos','Lojas e metas','Fontes e relacionamentos','Atualizar fontes'],FN=[dash1,dash2,dash3,dash4,dash5],HS=['executivo','produtos','lojas','fontes','atualizar'];
+const TABS=['Visão executiva','Produtos','Lojas e metas','Meu painel','Fontes e relacionamentos','Atualizar fontes'],FN=[dash1,dash2,dash3,dashC,dash4,dash5],HS=['executivo','produtos','lojas','painel','fontes','atualizar'];
 function render(){
  document.getElementById('view').innerHTML=FN[tab]();
- document.getElementById('fl').parentElement.style.display=tab>2?'none':'flex';document.querySelectorAll('#tabs button').forEach((b,i)=>b.setAttribute('aria-selected',i===tab));
+ document.getElementById('fl').parentElement.style.display=tab>3?'none':'flex';document.querySelectorAll('#tabs button').forEach((b,i)=>b.setAttribute('aria-selected',i===tab));
  const T=totals();document.getElementById('sub').textContent=(loja==='all'?'Todas as lojas':lojas[loja].nome+' · '+lojas[loja].cidade)+' · '+D.periodo+' · '+num(T.n)+' vendas';
 }
 document.getElementById('tabs').innerHTML=TABS.map((t,i)=>`<button role="tab" data-i="${i}">${t}</button>`).join('');
