@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gerenciar acessos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{--bg:#f4f6f8;--card:#fff;--fg:#17202a;--mut:#5f6b78;--line:#e3e8ed;--grid:#edf0f3;--good:#0a7d3b;--bad:#c23030;--warn:#b26a00;--accent:#257de0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101418;--card:#181d23;--fg:#eef1f4;--mut:#9aa5b1;--line:#2a323b;--grid:#232a32;--good:#3ec26f;--bad:#f06a6a;--warn:#e0a030;--accent:#338ced;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#101418;--card:#181d23;--fg:#eef1f4;--mut:#9aa5b1;--line:#2a323b;--grid:#232a32;--good:#3ec26f;--bad:#f06a6a;--warn:#e0a030;--accent:#338ced;color-scheme:dark}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2{font-family:'Space Grotesk',Inter,sans-serif;margin:0;font-weight:600;text-wrap:balance}h1{font-size:24px}h2{font-size:15px}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{font-size:12px;color:var(--mut);display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px}
+input{font:inherit;font-size:14px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{font:inherit;font-size:13px;font-weight:500;background:var(--accent);color:#fff;border:0;border-radius:8px;padding:9px 14px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.sec{background:var(--card);color:var(--fg);border:1px solid var(--line)}.btn.sm{padding:5px 9px;font-size:12px}.btn.del{color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-weight:500;color:var(--mut);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:12px}
+td{padding:8px;border-bottom:1px solid var(--grid);white-space:nowrap}td.act{text-align:right}td.act .btn{margin-left:4px}
+code{font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.pill{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--grid)}
+.n{font-size:12px;color:var(--mut)}
+.err{font-size:13px;color:var(--bad);min-height:18px}.ok{font-size:13px;color:var(--good)}
+.banner{border:1px solid var(--warn);border-radius:10px;padding:12px 14px;font-size:13px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:var(--card)}
+.banner b{color:var(--warn)}
+.login{min-height:80vh;display:flex;align-items:center;justify-content:center}
+.lcard{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:14px}
+ol{margin:0;padding-left:20px;font-size:13px;line-height:1.7}
+</style>
+<div class="login" id="login"><form class="lcard" id="lf">
+ <div><h1>Gerenciar acessos</h1><div class="sub">Entre com a conta de administrador</div></div>
+ <label for="lu">Usuário<input id="lu" autocomplete="username" required autofocus></label>
+ <label for="lp">Senha<input id="lp" type="password" autocomplete="current-password" required></label>
+ <div class="err" id="le" role="alert"></div>
+ <button class="btn" id="lb" type="submit">Entrar</button>
+</form></div>
+<div class="wrap" id="app" hidden>
+ <header><div><h1>Gerenciar acessos</h1><div class="sub" id="who"></div></div>
+  <div class="row"><a class="btn sec" href="index.html">Voltar ao painel</a><button class="btn sec" id="out" type="button">Sair</button></div></header>
+ <div class="banner" id="pend" hidden><span><b>Alterações não publicadas.</b> Gere o arquivo e substitua o acessos.json no repositório.</span><span class="row"><button class="btn" id="gen" type="button">Gerar acessos.json</button><button class="btn sec" id="copy" type="button" hidden>Copiar conteúdo</button></span></div>
+ <div class="card"><h2>Acessos de leitura</h2><div class="n">Quem tem acesso ao painel. O administrador não aparece aqui.</div><div class="tw"><table><thead><tr><th>Usuário</th><th>Senha</th><th></th></tr></thead><tbody id="tb"></tbody></table></div><div class="n" id="empty" hidden>Nenhum acesso de leitura criado.</div></div>
+ <form class="card" id="nf"><h2>Novo acesso</h2>
+  <div class="row"><label for="nu">Usuário<input id="nu" autocomplete="off" required></label><label for="np">Senha (mínimo 8 caracteres)<input id="np" autocomplete="off" required></label><button class="btn sec" id="g" type="button">Gerar senha</button><button class="btn" type="submit">Adicionar</button></div><div class="err" id="ne"></div></form>
+ <form class="card" id="af"><h2>Senha do administrador</h2>
+  <div class="row"><label for="ap">Nova senha (mínimo 8 caracteres)<input id="ap" type="password" autocomplete="new-password" required></label><button class="btn" type="submit">Alterar</button></div><div class="err" id="ae"></div></form>
+ <div class="card"><h2>Como publicar as mudanças</h2><ol><li>Clique em <b>Gerar acessos.json</b> e baixe o arquivo.</li><li>No repositório do GitHub, abra o <code>acessos.json</code>, clique no lápis e cole o conteúdo novo, ou use Add file, Upload files e substitua o arquivo.</li><li>Faça o commit. Em 1 a 2 minutos o GitHub Pages aplica a mudança.</li></ol>
+ <div class="n">Cada vez que o arquivo é gerado, os dados são recriptografados com uma chave nova. Um acesso removido deixa de abrir a versão nova do arquivo.</div></div>
+</div>
+<script>
+const enc=new TextEncoder(),dec=new TextDecoder(),IT=200000;
+const norm=u=>String(u).trim().toLowerCase();
+const b64e=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+const b64d=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function kek(u,p,salt,it){const km=await crypto.subtle.importKey('raw',enc.encode(norm(u)+':'+p),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:it,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function uid(u){const h=await crypto.subtle.digest('SHA-256',enc.encode('u:'+norm(u)));return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function aesEnc(key,bytes){const iv=crypto.getRandomValues(new Uint8Array(12));const c=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,bytes);return {iv:b64e(iv),c:b64e(new Uint8Array(c))}}
+async function aesDec(key,o){return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(o.iv)},key,b64d(o.c)))}
+async function openFile(f,u,p){const id=await uid(u),s=f.slots.find(x=>x.id===id);if(!s)throw new Error('user');
+ const k=await kek(u,p,b64d(s.s),f.it),raw=await aesDec(k,s);
+ const dek=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+ return {dados:JSON.parse(dec.decode(await aesDec(dek,f.data))),admin:!!s.a}}
+async function loadAcc(){const r=await fetch('acessos.json',{cache:'no-store'});if(!r.ok)throw new Error('acessos.json não encontrado');return r.json()}
+
+const $=id=>document.getElementById(id);
+let S={admin:null,users:[],dados:null,dirty:false,show:new Set(),edit:null,conf:null,last:null};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function genPw(){const a='abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',r=crypto.getRandomValues(new Uint8Array(12));return [...r].map(x=>a[x%a.length]).join('')}
+function dirty(){S.dirty=true;S.last=null;$('pend').hidden=false;$('copy').hidden=true;render()}
+function render(){
+ $('who').textContent='Conectado como '+S.admin.u;
+ $('empty').hidden=S.users.length>0;
+ $('tb').innerHTML=S.users.map((x,i)=>{
+  const ed=S.edit===i;
+  return `<tr><td>${esc(x.u)}</td><td>${ed?`<input id="ep" value="" placeholder="Nova senha" style="width:170px">`:(S.show.has(i)?`<code>${esc(x.p)}</code>`:'<code>••••••••</code>')}</td><td class="act">${ed?`<button class="btn sm" data-a="save" data-i="${i}">Salvar</button><button class="btn sm sec" data-a="cancel">Cancelar</button>`:`<button class="btn sm sec" data-a="show" data-i="${i}">${S.show.has(i)?'Ocultar':'Mostrar'}</button><button class="btn sm sec" data-a="cp" data-i="${i}">Copiar senha</button><button class="btn sm sec" data-a="edit" data-i="${i}">Alterar senha</button>${S.conf===i?`<button class="btn sm del" data-a="rm" data-i="${i}">Confirmar remoção</button>`:`<button class="btn sm sec del" data-a="conf" data-i="${i}">Remover</button>`}`}</td></tr>`}).join('');
+}
+$('tb').onclick=async e=>{const b=e.target.closest('button');if(!b)return;const i=+b.dataset.i,a=b.dataset.a;
+ if(a==='show'){S.show.has(i)?S.show.delete(i):S.show.add(i)}
+ else if(a==='cp'){try{await navigator.clipboard.writeText(S.users[i].p)}catch(_){S.show.add(i)}}
+ else if(a==='edit'){S.edit=i;S.conf=null}
+ else if(a==='cancel'){S.edit=null}
+ else if(a==='save'){const v=$('ep').value;if(v.length<8){$('ep').placeholder='Mínimo 8 caracteres';return}S.users[i].p=v;S.edit=null;return dirty()}
+ else if(a==='conf'){S.conf=i}
+ else if(a==='rm'){S.users.splice(i,1);S.conf=null;S.show.clear();return dirty()}
+ render()};
+$('g').onclick=()=>{$('np').value=genPw()};
+$('nf').onsubmit=e=>{e.preventDefault();const u=norm($('nu').value),p=$('np').value,er=$('ne');er.textContent='';
+ if(!/^[a-z0-9._@-]+$/.test(u))return er.textContent='Use só letras, números e . _ @ - no usuário.';
+ if(p.length<8)return er.textContent='A senha precisa ter pelo menos 8 caracteres.';
+ if(u===norm(S.admin.u)||S.users.some(x=>x.u===u))return er.textContent='Esse usuário já existe.';
+ S.users.push({u,p});$('nu').value='';$('np').value='';dirty()};
+$('af').onsubmit=e=>{e.preventDefault();const p=$('ap').value;if(p.length<8)return $('ae').textContent='A senha precisa ter pelo menos 8 caracteres.';
+ S.admin.p=p;$('ap').value='';$('ae').textContent='';dirty()};
+$('gen').onclick=async()=>{const b=$('gen');b.disabled=true;b.textContent='Gerando...';
+ try{const f=await buildFile(S.dados,S.admin,S.users);S.last=JSON.stringify(f);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([S.last],{type:'application/json'}));a.download='acessos.json';document.body.appendChild(a);a.click();a.remove();
+  $('copy').hidden=false}catch(er){alert&&0;}
+ b.disabled=false;b.textContent='Gerar acessos.json'};
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(S.last);$('copy').textContent='Copiado'}catch(_){$('copy').textContent='Não foi possível copiar'}setTimeout(()=>$('copy').textContent='Copiar conteúdo',1800)};
+async function buildFile(dados,admin,users){
+ const dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+ const raw=new Uint8Array(await crypto.subtle.exportKey('raw',dek));
+ const data=await aesEnc(dek,enc.encode(JSON.stringify(dados))),slots=[];
+ for(const [x,a] of [[admin,1],...users.map(u=>[u,0])]){const s=crypto.getRandomValues(new Uint8Array(16));const k=await kek(x.u,x.p,s,IT);slots.push({id:await uid(x.u),s:b64e(s),...await aesEnc(k,raw),...(a?{a:1}:{})})}
+ const cs=crypto.getRandomValues(new Uint8Array(16)),ck=await kek(admin.u,admin.p,cs,IT);
+ const cofre={s:b64e(cs),...await aesEnc(ck,enc.encode(JSON.stringify({admin:norm(admin.u),users})))};
+ return {v:2,it:IT,data,slots,cofre}}
+$('lf').onsubmit=async e=>{e.preventDefault();const le=$('le'),lb=$('lb'),u=$('lu').value,p=$('lp').value;le.textContent='';lb.disabled=true;lb.textContent='Entrando...';
+ try{const f=await loadAcc();let r;try{r=await openFile(f,u,p)}catch(_){throw new Error('Usuário ou senha incorretos.')}
+  if(!r.admin)throw new Error('Esta conta não é de administrador.');
+  const ck=await kek(u,p,b64d(f.cofre.s),f.it),cf=JSON.parse(dec.decode(await aesDec(ck,f.cofre)));
+  S.admin={u:norm(u),p};S.users=cf.users;S.dados=r.dados;$('login').hidden=true;$('app').hidden=false;$('lp').value='';render()}
+ catch(er){le.textContent=er.message||'Não foi possível entrar.'}
+ lb.disabled=false;lb.textContent='Entrar'};
+$('out').onclick=()=>location.reload();
+</script>
